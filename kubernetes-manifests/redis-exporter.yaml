@@ -1,0 +1,122 @@
+---
+# Source: prometheus-redis-exporter/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: redis-exporter-prometheus-redis-exporter
+  labels:
+    helm.sh/chart: prometheus-redis-exporter-6.15.0
+    app.kubernetes.io/name: prometheus-redis-exporter
+    app.kubernetes.io/instance: redis-exporter
+    app.kubernetes.io/version: "v1.75.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: prometheus-redis-exporter/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: redis-exporter-prometheus-redis-exporter
+  labels:
+    helm.sh/chart: prometheus-redis-exporter-6.15.0
+    app.kubernetes.io/name: prometheus-redis-exporter
+    app.kubernetes.io/instance: redis-exporter
+    app.kubernetes.io/version: "v1.75.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: prometheus-redis-exporter/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: redis-exporter-prometheus-redis-exporter
+  labels:
+    helm.sh/chart: prometheus-redis-exporter-6.15.0
+    app.kubernetes.io/name: prometheus-redis-exporter
+    app.kubernetes.io/instance: redis-exporter
+    app.kubernetes.io/version: "v1.75.0"
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: redis-exporter-prometheus-redis-exporter
+subjects:
+- kind: ServiceAccount
+  name: redis-exporter-prometheus-redis-exporter
+---
+# Source: prometheus-redis-exporter/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-exporter-prometheus-redis-exporter
+  labels:
+    helm.sh/chart: prometheus-redis-exporter-6.15.0
+    app.kubernetes.io/name: prometheus-redis-exporter
+    app.kubernetes.io/instance: redis-exporter
+    app.kubernetes.io/version: "v1.75.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    {}
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis-exporter
+      port: 9121
+      targetPort: exporter-port
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: prometheus-redis-exporter
+    app.kubernetes.io/instance: redis-exporter
+---
+# Source: prometheus-redis-exporter/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-exporter-prometheus-redis-exporter
+  labels:
+    helm.sh/chart: prometheus-redis-exporter-6.15.0
+    app.kubernetes.io/name: prometheus-redis-exporter
+    app.kubernetes.io/instance: redis-exporter
+    app.kubernetes.io/version: "v1.75.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    {}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus-redis-exporter
+      app.kubernetes.io/instance: redis-exporter
+  template:
+    metadata:
+      annotations:
+        {}
+      labels:
+        helm.sh/chart: prometheus-redis-exporter-6.15.0
+        app.kubernetes.io/name: prometheus-redis-exporter
+        app.kubernetes.io/instance: redis-exporter
+        app.kubernetes.io/version: "v1.75.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: redis-exporter-prometheus-redis-exporter
+      containers:
+        - name: prometheus-redis-exporter
+          image: "oliver006/redis_exporter:v1.75.0"
+          imagePullPolicy: IfNotPresent
+          args:
+          ports:
+            - name: exporter-port
+              containerPort: 9121
+          env:
+            - name: REDIS_ADDR
+              value: redis://redis-cart:6379
+          volumeMounts:
+          livenessProbe:
+            httpGet:
+              path: /
+              port: exporter-port
+          readinessProbe:
+            httpGet:
+              path: /
+              port: exporter-port
+          resources:
+            {}
+      volumes:
