@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-exporter
+  labels:
+    app: mysql-exporter
+spec:
+  ports:
+  - name: metrics
+    port: 9104
+    targetPort: 9104
+  selector:
+    app: mysql-exporter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-exporter
+spec:
+  selector:
+    matchLabels:
+      app: mysql-exporter
+  template:
+    metadata:
+      labels:
+        app: mysql-exporter
+    spec:
+      containers:
+      - name: mysql-exporter
+        image: prom/mysqld-exporter:v0.14.0
+        env:
+        - name: MYSQLD_EXPORTER_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-exporter-credentials
+              key: user
+        - name: MYSQLD_EXPORTER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-exporter-credentials
+              key: password
+        - name: DATA_SOURCE_NAME
+          value: "mysqld_exporter:12345@tcp(mysql:3306)/"
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mysql-exporter
+  labels:
+    release: prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: mysql-exporter
+  endpoints:
+  - port: metrics
+    interval: 30s
